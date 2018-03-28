@@ -1,0 +1,230 @@
+Explanation for the all the car programs
+Jonathan Chang
+
+------------------------------------------------------------------------
+Car.java - implementation explanation of source file
+
+This was the simplest part to implement. The class includes all parts
+of the car (VIN, make, model, price, mileage, color) which can be set from
+values in the cars.txt file or from user input through get/set functions
+per value. Each is O(1) since each variable ties directly to its specific
+car. The toString overwrites so it can be output to our main program
+where the user can see which car is output. Space wise this was also
+the best way to do it since we need a new car object for each car entered.
+
+------------------------------------------------------------------------
+CarTracker.java - implementation explanation of source file
+
+This was the main menu and user choices structure file. This involved
+a main which first initializes a priority queue that I made (explained
+later) and then reads in cars.txt file. It adds all the cars in the file
+to the priority queue. Then the main menu loops until exiting. Each option
+presented is as written in the assignment. Some options ask for further 
+user input such as for make and model, or for which update option the user
+desires. 
+One thing to note is that it will call the lookup() function in order to
+see if the VIN number entered by a user correlates to an existing car.
+This function is O(log n) by using the tree map get() function, further
+explained in the next section. It will continue running if the car exists,
+or will get a null return value, and tell the user the car they looked up
+doesn't exist. Then will take back to the main menu.
+Overall, it puts all the work into the priority queue file.
+
+------------------------------------------------------------------------
+IndexMinPQ.java - implementation explanation of source file
+
+I chose to edit the book code given since it fit well with utilizing a 
+min heap, and making it indexable. In the end I kept some basic functions,
+such as isEmpty(), and major ones such as swim(), sink(), greater(), and 
+exch(). I edited them a bit to include a toggle function, either operating
+for price or mileage depending on what was being requested.
+These were used throughout the functions I wrote. It saved me time
+when writing this project to focus on other aspects of implementation.
+Each are run time of O(log n) worst case as written in the book code.
+Further edits were done to work with make/model, such as accepting a 
+parameter of the current size of the heap instead of the entire car size.
+This is further explained in the make/model section.
+
+For the indirection table I chose to use tree map. The benefits included
+its self-balancing, which would have keys sorted ascending.
+Tree Map stores as (key, value) pairs where keys are organized ascending
+and repeat keys replace previous ones. Values can be anything.
+The insert delete and search for a red black tree (used by tree map) are 
+all O(log n) for average and worst case, fitting into the project 
+directions. Get, containsKey, put, remove functions of Tree map are thus
+also O(log n). These functions were used throughout to ensure best run
+times. Run times were researched and confirmed by java documentation.
+
+Other possibilities considered included Hash Map, ArrayList, but those 
+required worst case get and put function run times of O(n) which would not
+fit into the requirements. Tree Map guarantees O(log n). And thus was the
+best bet.
+Since space was not as big a concern, I used multiple tree maps to ensure
+the best run time possible.
+Space for each tree depends only on the number of cars entered. Since it
+will keep adding as long as a new car comes in. 
+The heaps used store Car object per index. For all cars, the indexPrice &
+indexMileage trees store (VIN, index in heap) for each car.
+
+The following are the thoughts behind the functions in IndexMinPQ.
+Note that the first half explains everything for all cars.
+The additions to each function for make/model cars will be explained at
+the end.
+
+0 The variables
+n - the number of all cars entered
+pqPrice - heap for all car prices, lowest price car is at first index
+pqMileage - heap for all car miles, lowest mileage car is at first index
+indexPrice - tree map for all car prices, saves VIN number and index of 
+the car in pqPrice
+indexMileage - tree map for all car prices, saves VIN number and index of
+the car in pqMileage
+
+1 Insert car
+For all cars, I have the size counter n that updates (since a car is now
+being added). A check whether or not the heap is full is done along with
+resize if needed (doubles size of array and copies its old contents). This
+is not very time efficient, so I chose to start with a large array (255)
+which will not require a resize right away. To copy each car in the array
+is O(n). Space wise it is not too large, in case there is not a need to
+look up so many cars, so why have all the unnecessary empty slots. It will
+really depend on the specific case if this program was used in a real life
+setting. In any case, each insert will insert the current car into the 
+index corresponding to the current total number of cars.
+After that, the two tree maps for indexing mileage and price are also
+updated, with the current car VIN number and index stored in the heap
+for use in updating and removing. This is O(log n) as stated in the java
+documentation of tree map put function.
+The swim function is used to swim the car value of either mileage or price
+so that the lowest will always be at index 1 in the heap. This swapping is
+O(log n) for the swim function as discussed in the book code. 
+
+2 Update car
+To update the car, I passed in the parameters for which value to update
+so the method knows which one to change. For example, something will have
+a value 0 or greater for price if price is to be changed, with the other
+alternatives mileage and color set to -1 and "" respectively. 
+I can directly access the car desired to update by looking up its VIN.
+This is the tree map get() function which is O(log n).
+
+Ex update color.
+This is so if a car is returned, it won't matter if we looked up
+lowest price or mileage, they will both be updated with the new color.
+Again, it will be in O(log n) to get the VIN number, O(1) to set the 
+color. 
+Same logic goes for updating mileage and price. You just would need to 
+swim/sink for updating whichever value was pertinent. That is, re sort of
+the heap if mileage was updated, since this may displace it's current
+position. 
+The combination of swim and sink for resorting the heap is due to not 
+knowing where the car will end up in comparison to other cars. Using each
+is 2 * O(log n) which is O(log n).
+Then just update the mileage in the price heap without concern
+of the rearrangement, since only order of prices matter in that heap.
+
+3 Remove car
+To remove a car, I first check if we are empty, that is size n is 0. Exit
+with a message if that is true.
+Next is the actual implementation. First I change all the mileage parts.
+I do a get() to get the VIN number of the car we want to delete, so I can
+access the right car in the mileage heap as well as the tree map. 
+Deleting from the heap takes more work. To ensure best run times, the best
+way was to use the exchange function to swap the position of this car with
+the very last car in the mileage heap. That way I can simply set the last
+position in the heap to null, which is O(1). Then, use swim/sink functions
+to re sort the heap, without the car to be removed. Last, do a remove(), a
+run time of O(log n) from the tree map. 
+The same thing is done for the removal from price heap and price tree map.
+
+4/5 Get minimum price/mileage of all cars
+This was simple to implement. I return the first index of either heap,
+depending on whether mileage or price is looked up. Since the sorting of
+the heap was done already when each car is inserted, this is an O(1) get
+by returning the car at the first index.
+
+6/7 Get minimum price/mileage based on Make/Model of car (very long)
+After some time, I found the best way to implement this step was to have
+multiple tree maps which do the same things in a more specific way than
+before. The main tree maps for price and mileage now save the make/model
+of the car, and a unique heap for this make/model. Accessing this unique
+heap which is sorted when a car is added, can return the lowest car for
+the desired value of the specific make/model at its first index. 
+Another tree pair is a counter which holds the make/model pair as well as
+how many cars are in this pair. This way when removing I can see if I need
+to get rid of this category car.
+A third tree map pair holds the VIN and index value in the relevant unique
+heap for the car. All these tree maps together enable specific lookup and
+tracking of cars while staying in O(log n) runtime. The main concern is
+space, which will add up just because the trees will have to expand as
+different pairs of make/model cars are added. The benefit is that the tree
+map will update each time to the unique make/model, so at least there is
+only one heap per make/model. In summary, I put the importance of run time
+first, and so have more space requirements.
+ 
+Addition to variables:
+tP - stores make/model, and heap for all cars of this make/model sorted
+by price
+tM - stores make/model, and heap for all cars of this make/model sorted
+by mileage
+extraP - stores VIN of car, and index of the car in its unique heap of
+its make/model sorted by price
+extraM - stores VIN of car, and index of the car in its unique heap of
+its make/model sorted by mileage
+countMMP - stores make/model, and count of how many cars of this make/
+model there are. used during reference to car prices
+countMMM - stores make/model, and count of how many cars of this make/
+model there are. used during reference to car mileages
+
+Addition to insert:
+The addition to insert followed the same logic as all cars. I put in a 
+different function swapCheck just to make it easier for me to edit.
+It reads in the toggle for either mileage/price update, and uses the
+respective trees for this choice. It checks with the containsKey function,
+O(log n) if the car of this make/model is added for the first time.
+If so, it makes a new heap for this make/model pair. It adds the car to
+the first index of the heap, O(1). It uses put O(log n) to put the car
+in each tree (3 of them) with the desired values as explained above.
+If it already has this make/model pair, then update of the old heap is
+desired. I extract the old heap using the get function, O(log n), and use
+a counter increment for this new car. This can now update the counter tree
+by the put function. And swim is called next to bring the lowest value,
+price or mileage, to the top of the heap. Swim, sink, exchange, were all
+edited in order for the program to work with make/model. Swim takes in the
+number of cars in the current heap, the toggle for price or mileage, the
+heap itself, and the VIN tree so it can update the indexes if swaps occur.
+After the heap is updated, the main tree tP or tM is updated by putting
+the new heap into the current car make/model. Thus replacing the old one.
+
+Addition to update:
+For this section, again the similar logic to all cars was used. I used the
+same pattern as before, except now I have to look up which make/model is
+currently being updated (this car). From that I get the heap, which I can
+swim/sink as before (using same get tree map function). I passed in a new
+parameter to sink, as now I wanted only for the number of cars in the now
+smaller make/model heap (int len). Then after the heap updates, I replace
+the old heap with the new in the main tree tP/tM. 
+I update the opposite tree (ex. tP when mileage is updated) in order to 
+ensure that everything prints out according to the updates. This is done
+in the same way, just without the sinking and swimming since no comparison
+is needed.
+Color follows the same logic.
+
+Addition to remove:
+The addition to remove again mirrored the logic of all cars. I used a if
+check on my counter functions, since if the counter for this make/model is
+non existant that means I ran out of this make/model pair. I do the same
+pattern of get functions to find the heap I want. If this heap count is
+currently 1, that means I'm about to delete the last one. So I don't have
+to worry about sink/swim, I just remove the make/model directly from each
+tree which is O(log n). Otherwise there is more than 1 car for this make/
+model in this current iteration, so I need to resort the heap. This is 
+done with the same exchange as before, followed by swim/sink an reset of
+the trees through put functions. 
+
+Finally, the function 6/7 itself.
+I simply look up the make/model in the main tree, get the heap, and then
+return the first index of that heap. It just required going one level 
+deeper, which was all set up by the new tree map pattern for this section.
+Run times are again O(log n) since I use the get function.
+
+
